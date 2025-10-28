@@ -1,0 +1,27 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kafka-connect-registrar
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: registrar
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          env:
+            # 1. values.env에 정의된 모든 환경변수 일괄 적용
+            {{- range $key, $value := .Values.env }}
+            - name: {{ $key }}
+              value: "{{ $value }}"
+            {{- end }}
+
+            # 2. 논리적 제어용 (DB/테이블/템플릿)
+            - name: DB_LIST
+              value: "{{ join " " .Values.connect.dbList }}"
+            - name: TABLE_LIST
+              value: "{{ join " " .Values.connect.tableList }}"
+            - name: TEMPLATE_JSON
+              value: |
+{{ .Values.connect.template | indent 16 }}
+      backoffLimit: 0
