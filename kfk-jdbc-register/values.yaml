@@ -1,0 +1,42 @@
+image:
+  repository: your-registry/connector-registrar
+  tag: latest
+
+env:                     # <── 환경변수 일원화
+  CONNECT_URL: "http://connect:8083"
+  CONNECTION_URL_PREFIX: "jdbc:mysql://"
+  DB_USER: "user"
+  DB_PASS: "pass"
+  EXTRA_ENV_1: "example"     # (필요 시 자유롭게 추가 가능)
+  EXTRA_ENV_2: "another"
+
+connect:
+  dbList:
+    - db1
+    - db2
+    - db3
+
+  tableList:
+    - user_logs
+    - transactions
+    - events
+
+  template: |
+    {
+      "connector.class": "io.confluent.connect.jdbc.JdbcSourceConnector",
+      "tasks.max": "1",
+      "mode": "query",
+      "incrementing.column.name": "newid",
+      "topic": "${DB}_${TABLE}",
+      "connection.url": "${CONNECTION_URL_PREFIX}${DB_HOST}:3306/${DB_NAME}",
+      "connection.user": "${DB_USER}",
+      "connection.password": "${DB_PASS}",
+      "query": "SELECT CONCAT(timestamp_col, LPAD(id, 6, '0')) AS newid, * FROM ${TABLE};",
+      "poll.interval.ms": "60000",
+      "numeric.precision.mapping": "true",
+      "errors.tolerance": "all",
+      "errors.log.enable": "true",
+      "errors.deadletterqueue.topic.name": "dlq-jdbc",
+      "topic.creation.default.replication.factor": "3",
+      "topic.creation.default.partitions": "3"s
+    }
